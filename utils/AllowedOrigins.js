@@ -1,6 +1,1 @@
-export const allowedOrigins = [
-    "http://localhost:3000",
-    "https://mkzdarood.vercel.app",
-    "https://mkzdarood.com",
-    undefined 
-]
+export const allowedOrigins = ["http://localhost:3000", "https://mkzdarood.vercel.app", "https://mkzdarood.com", "https://mkzdarood.com/", undefined];
