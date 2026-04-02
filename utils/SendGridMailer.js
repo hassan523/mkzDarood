@@ -1,31 +1,28 @@
 // emailService.js
-import sgMail from "@sendgrid/mail";
 
-sgMail.setApiKey('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');
+import { Resend } from "resend";
+import dotenv from "dotenv";
+
+dotenv.config();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const SendGridMailer = async ({ to, subject, html }) => {
-  console.log('imtiazhasan873@gmail.com', "Sender Email");
-  const msg = {
-    to,
-    from: 'imtiazhasan873@gmail.com',
-    subject,
-    html,
-  };
+   try {
+      const response = await resend.emails.send({
+         from: process.env.RESEND_FROM_EMAIL,
+         to,
+         subject,
+         html,
+      });
 
-  try {
-    const [response] = await sgMail.send(msg);
+      console.log("✅ Email sent successfully");
+      console.log("📨 Resend ID:", response?.data?.id || "Not available");
 
-    const messageId = response.headers["x-message-id"] || response.headers["x-message-id"];
-    console.log("✅ Email sent successfully");
-    console.log("📨 SendGrid Message ID:", messageId || "Not available");
-    return true;
-  } catch (error) {
-    console.error(
-      "Error sending email:",
-      error.response?.body || error.message
-    );
-    return false;
-  }
+      return true;
+   } catch (error) {
+      console.error("❌ Error sending email:", error.message);
+      return false;
+   }
 };
 
 export default SendGridMailer;
