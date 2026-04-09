@@ -451,7 +451,7 @@ const HandleUpdateProfile = async (req, res, next) => {
 
       const updatedFields = {};
 
-      const { country, city, username, phone } = req.body;
+      const { country, city, username, phone, countryCode } = req.body;
 
       if (profilePicture) {
          updatedFields.profilePicture = uploadResult.secure_url;
@@ -467,6 +467,9 @@ const HandleUpdateProfile = async (req, res, next) => {
       }
       if (phone) {
          updatedFields.phone = phone;
+      }
+      if (countryCode) {
+         updatedFields.countryCode = countryCode;
       }
 
       if (oldPassword && !newPassword) {
