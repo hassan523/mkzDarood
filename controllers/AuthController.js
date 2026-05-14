@@ -555,4 +555,30 @@ const handleGetUser = async (req, res, next) => {
    }
 };
 
-export { register, login, logout, refreshToken, forgetPassword, verifyOtp, changePassword, HandleGetProfile, HandleUpdateProfile, handleGetUser };
+// DELETE USER
+// METHOD : PATCH
+// ENDPOINT: /api/:userId/delete-account
+const handleDeleteAccount = async (req, res, next) => {
+   try {
+      const { userId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+         return res.status(400).json({ message: "Invalid User ID" });
+      }
+
+      const user = await UserModel.findOneAndDelete({ _id: userId });
+
+      if (!user) {
+         return res.status(404).json({ message: "User Not Found or Already Deleted" });
+      }
+
+      return res.status(200).json({
+         message: "Your account has been deleted successfully",
+      });
+   } catch (error) {
+      console.error(error);
+      next(error);
+   }
+};
+
+export { register, login, logout, refreshToken, forgetPassword, verifyOtp, changePassword, HandleGetProfile, HandleUpdateProfile, handleGetUser, handleDeleteAccount };
