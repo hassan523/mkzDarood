@@ -1,5 +1,5 @@
 import express from "express";
-import { login, logout, refreshToken, register, forgetPassword, verifyOtp, changePassword, HandleGetProfile, HandleUpdateProfile, handleGetUser } from "../controllers/AuthController.js";
+import { login, logout, refreshToken, register, forgetPassword, verifyOtp, changePassword, HandleGetProfile, HandleUpdateProfile, handleGetUser, handleDeleteAccount } from "../controllers/AuthController.js";
 import validate from "../middlewares/ValidationHandler.js";
 import { loginSchema, adminSchema, userSchema } from "../validations/AuthValidations.js";
 import AuthMiddleware from "../middlewares/AuthMiddleware.js";
@@ -27,6 +27,8 @@ router.patch("/change-password", changePassword);
 router.get("/profile/:id", HandleGetProfile);
 
 router.patch("/update-profile/:id", AuthMiddleware, AccessMiddleware(["Admin", "User"]), HandleUpdateProfile);
+
+router.delete("/:userId/delete-account", AuthMiddleware, AccessMiddleware(["Admin", "User"]), handleDeleteAccount);
 
 router.get("/get-users", AuthMiddleware, AccessMiddleware(["Admin"]), handleGetUser);
 
