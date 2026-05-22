@@ -8,7 +8,7 @@ import { handleGetRealtimeCounter, handleRealtimeCounter, handleResetRealtimeCou
 
 const router = express.Router();
 
-router.patch("/update-seq", AuthMiddleware, AccessMiddleware(["Admin", "User"]), handleRealtimeCounter);
+router.patch("/update-seq/:userId", AuthMiddleware, AccessMiddleware(["Admin", "User"]), handleRealtimeCounter);
 
 router.get("/get-seq", handleGetRealtimeCounter);
 router.patch("/reset-seq", AuthMiddleware, AccessMiddleware(["Admin"]), handleResetRealtimeCounter);

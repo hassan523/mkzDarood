@@ -16,6 +16,9 @@ import connectDB from "./config/DB.js";
 import AuthRoutes from "./routes/AuthRoutes.js";
 import CounterRoutes from "./routes/CounterRoutes.js";
 import NewsUpdateRoutes from "./routes/NewsUpdateRoutes.js";
+import HistoryRoutes from "./routes/HistoryRoutes.js";
+import BiometricRoutes from "./routes/BiometricRoutes.js";
+
 import { allowedOrigins } from "./utils/AllowedOrigins.js";
 
 // Cloudinary
@@ -36,28 +39,29 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["POST", "GET", "PATCH", "DELETE"],
-  })
+   cors({
+      origin: allowedOrigins,
+      credentials: true,
+      methods: ["POST", "GET", "PATCH", "DELETE"],
+   }),
 );
 
 // === Cloudinary Configuration ===
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_Cloud,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  api_key: process.env.CLOUDINARY_API_KEY
-})
+   cloud_name: process.env.CLOUDINARY_Cloud,
+   api_secret: process.env.CLOUDINARY_API_SECRET,
+   api_key: process.env.CLOUDINARY_API_KEY,
+});
 
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/'
-}));
-
+app.use(
+   fileUpload({
+      useTempFiles: true,
+      tempFileDir: "/tmp/",
+   }),
+);
 
 app.get("/", (req, res) => {
-  res.status(200).json({ heath: "Ok" });
+   res.status(200).json({ heath: "Ok" });
 });
 
 // === Rate Limiter
@@ -70,6 +74,8 @@ app.use(ErrorLogger);
 app.use("/api", AuthRoutes);
 app.use("/api/news", NewsUpdateRoutes);
 app.use("/api/counter", CounterRoutes);
+app.use("/api/history", HistoryRoutes);
+app.use("/api/biometric", BiometricRoutes);
 
 // === Error Handler
 app.use(ErrorHandler);
@@ -78,5 +84,5 @@ app.use(ErrorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
