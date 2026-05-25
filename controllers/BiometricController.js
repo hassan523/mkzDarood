@@ -136,6 +136,72 @@ const handleVerifyNonce = async (req, res, next) => {
    }
 };
 
+// ENDPOINT: /api/biometric/verify-user
+const handleGetBioMetric = async (req, res, next) => {
+   try {
+      const { storedDeviceID, nonce, signature, deviceId } = req.body;
+
+      const findBioMetric = await BiometricModel.findOne({ deviceId: storedDeviceID });
+
+      if (!findBioMetric) {
+         return res.status(409).json({ message: "Biometric not found" });
+      }
+
+      if (findBioMetric.nonce.value !== nonce) {
+         return res.status(401).json({ message: "Invalid challenge" });
+      }
+
+      if (!findBioMetric.nonce.expiry || findBioMetric.nonce.expiry < new Date()) {
+         return res.status(410).json({ message: "Challenge expired" });
+      }
+
+      const findUser = await UserModel.findOne({ _id: new mongoose.Types.ObjectId(findBioMetric.userId) });
+
+      if (!findUser) {
+         return res.status(409).json({ message: "User not found" });
+      }
+
+      const signatureBuffer = Buffer.from(signature, "base64");
+
+      const pemKey = formatPublicKey(findBioMetric.publicKey);
+
+      const verifier = crypto.createVerify("RSA-SHA256");
+      verifier.update(nonce);
+      verifier.end();
+
+      const verified = verifier.verify(pemKey, signatureBuffer);
+
+      console.log(verified);
+
+      if (!verified) {
+         return res.status(401).json({ message: "Fingerprint verification failed" });
+      }
+
+      findBioMetric.nonce.value = null;
+      findBioMetric.nonce.expiry = null;
+      findBioMetric.lastUsedAt = new Date();
+
+      await findBioMetric.save();
+
+      const accessToken = generateAccessToken(findUser, deviceId);
+      const refreshToken = generateRefreshToken(findUser, deviceId);
+
+      findUser.refreshTokens = findUser.refreshTokens.filter((entry) => entry.deviceId !== deviceId);
+
+      findUser.refreshTokens.push({
+         token: refreshToken,
+         deviceId: deviceId,
+      });
+      await findUser.save();
+
+      console.log(findUser);
+
+      res.status(200).json({ accessToken, refreshToken, user: findUser });
+   } catch (error) {
+      next(error);
+   }
+};
+
 // ENDPOINT: /api/biometric/delete-biometric/:userId
 const handleDeleteBiometric = async (req, res, next) => {
    try {
@@ -160,4 +226,4 @@ const handleDeleteBiometric = async (req, res, next) => {
    }
 };
 
-export { handleCreateBiometric, handleDeleteBiometric, handleCreateNonce, handleVerifyNonce };
+export { handleCreateBiometric, handleDeleteBiometric, handleCreateNonce, handleVerifyNonce, handleGetBioMetric };
