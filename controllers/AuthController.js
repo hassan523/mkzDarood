@@ -557,8 +557,8 @@ const handleGetUser = async (req, res, next) => {
 
 // DELETE USER
 // METHOD : PATCH
-// ENDPOINT: /api/:userId/delete-account
-const handleDeleteAccount = async (req, res, next) => {
+// ENDPOINT: /api/:userId/verify-delete-account
+const handleVerifyDeleteAccount = async (req, res, next) => {
    try {
       const { userId } = req.params;
 
@@ -566,14 +566,52 @@ const handleDeleteAccount = async (req, res, next) => {
          return res.status(400).json({ message: "Invalid User ID" });
       }
 
-      const user = await UserModel.findOneAndDelete({ _id: userId });
+      const user = await UserModel.findOne({ _id: userId });
 
       if (!user) {
          return res.status(404).json({ message: "User Not Found or Already Deleted" });
       }
 
+      const findVerification = await OtpVerificationModel.findOne({ identifier: user.email });
+
+      if (findVerification && findVerification.otpExpire > new Date()) {
+         const remainingMinutes = Math.ceil((findVerification.otpExpire - new Date()) / (1000 * 60));
+
+         return res.status(400).json({
+            message: `A deletion OTP has already been sent. Please wait ${remainingMinutes} minute(s) before requesting another.`,
+         });
+      }
+
+      if (findVerification) {
+         await OtpVerificationModel.findOneAndDelete({ identifier: user.email });
+      }
+
+      const otp = generateOTP();
+      const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      SendGridMailer({
+         to: user.email,
+         subject: "Confirm Account Deletion",
+         html: `
+                  <h3>Account Deletion Request</h3>
+                  <p>We received a request to delete your account.</p>
+                  <p>Please use the OTP below to confirm:</p>
+                  <h2>${otp}</h2>
+                  <p>This OTP is valid for 10 minutes.</p>
+                  <p>If you did not make this request, you can safely ignore this email.</p>
+      `,
+      });
+
+      const createUserOtp = new OtpVerificationModel({
+         identifier: user.email,
+         otp: otp,
+         otpExpire: otpExpire,
+      });
+
+      await createUserOtp.save();
+
       return res.status(200).json({
-         message: "Your account has been deleted successfully",
+         message: "Please verify to delete your account.",
       });
    } catch (error) {
       console.error(error);
@@ -581,4 +619,44 @@ const handleDeleteAccount = async (req, res, next) => {
    }
 };
 
-export { register, login, logout, refreshToken, forgetPassword, verifyOtp, changePassword, HandleGetProfile, HandleUpdateProfile, handleGetUser, handleDeleteAccount };
+// DELETE USER
+// METHOD : PATCH
+// ENDPOINT: /api/:userId/delete-account
+const handleDeleteAccount = async (req, res, next) => {
+   try {
+      const { userId } = req.params;
+      const { otp } = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+         return res.status(400).json({ message: "Invalid User ID" });
+      }
+
+      const user = await UserModel.findOne({ _id: userId });
+
+      if (!user) {
+         return res.status(404).json({ message: "User Not Found or Already Deleted" });
+      }
+
+      const findVerification = await OtpVerificationModel.findOne({ identifier: user.email });
+
+      if (!findVerification) {
+         return res.status(404).json({ message: "No OTP verification found. Please request account deletion first." });
+      }
+
+      if (findVerification.otp !== otp) {
+         return res.status(400).json({ message: "Invalid OTP. Please check the OTP sent to your email." });
+      }
+
+      await UserModel.findByIdAndDelete(userId);
+      await OtpVerificationModel.findOneAndDelete({ identifier: user.email });
+
+      return res.status(200).json({
+         message: "Account deleted successfully.",
+      });
+   } catch (error) {
+      console.error(error);
+      next(error);
+   }
+};
+
+export { register, login, logout, refreshToken, forgetPassword, verifyOtp, changePassword, HandleGetProfile, HandleUpdateProfile, handleGetUser, handleVerifyDeleteAccount, handleDeleteAccount };
