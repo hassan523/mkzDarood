@@ -1,11 +1,49 @@
+import HistoryModel from "../models/HistorySchema.js";
 import RealtimeCounterModel from "../models/RealtimeCounter.js";
 
 const handleRealtimeCounter = async (req, res, next) => {
    try {
-      const { seq } = req.body;
+      const { seq, todayDate } = req.body;
+      const { userId } = req.params;
 
       if (typeof seq !== "number") {
          return res.status(400).json({ message: "Seq must be a number" });
+      }
+
+      if (!userId) {
+         return res.status(404).json({ message: "Invalid user" });
+      }
+
+      const userHistory = await HistoryModel.findOne({ userId });
+
+      const backendTodayDate = new Date().toISOString().split("T")[0];
+      const today = todayDate || backendTodayDate;
+
+      if (userHistory) {
+         const index = userHistory.histories.findIndex((item) => {
+            return item.readDate.toISOString().split("T")[0] === today;
+         });
+
+         if (index > -1) {
+            userHistory.histories[index].count += seq;
+         } else {
+            userHistory.histories.push({
+               count: seq,
+               readDate: new Date(today),
+            });
+         }
+
+         await userHistory.save();
+      } else {
+         await HistoryModel.create({
+            userId,
+            histories: [
+               {
+                  count: seq,
+                  readDate: new Date(today),
+               },
+            ],
+         });
       }
 
       const updatedCounter = await RealtimeCounterModel.findOneAndUpdate({}, { $inc: { seq } }, { new: true, upsert: true });

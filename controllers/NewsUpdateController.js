@@ -2,6 +2,7 @@ import AdminModel from "../models/AdminSchema.js";
 import { v2 as cloudinary } from "cloudinary";
 import NewsUpdateModel from "../models/NewsUpdateSchema.js";
 import SearchQuery from "../utils/SearchQuery.js";
+import mongoose from "mongoose";
 
 // ADD NEWS
 // METHOD : POST
@@ -11,36 +12,68 @@ const handleAddNews = async (req, res, next) => {
       const createdBy = await AdminModel.find().limit(1);
       const adminID = createdBy[0]._id;
 
-      const { content, title } = req.body;
+      const { content, title, btnName, btnLink, pinnedNews } = req.body;
 
-      const upload = req?.files?.upload;
-      let thumbnail = "";
-      let video = "";
+      const images = req?.files?.images;
+      const videos = req?.files?.videos;
+      console.log(images);
+      let thumbnails = [];
+      let videosArray = [];
+      let button = {
+         link: "",
+         text: "",
+      };
 
-      if (!content && !title) {
-         return res.status(400).json({ message: "Title and Content are required" });
+      if (!content || !title) {
+         return res.status(400).json({
+            message: "Title and Content are required",
+         });
       }
 
-      if (upload) {
-         const uploadResult = await cloudinary.uploader.upload(upload.tempFilePath, {
-            resource_type: "auto",
-            folder: "news",
-         });
-         if (uploadResult.resource_type === "image") {
-            thumbnail = uploadResult.secure_url;
-         } else if (uploadResult.resource_type === "video") {
-            video = uploadResult.secure_url;
+      if (images) {
+         const files = Array.isArray(images) ? images : [images];
+
+         for (const file of files) {
+            const uploadResult = await cloudinary.uploader.upload(file.tempFilePath, {
+               resource_type: "auto",
+               folder: "news",
+            });
+
+            thumbnails.push(uploadResult.secure_url);
          }
+      }
+
+      if (videos) {
+         const files = Array.isArray(videos) ? videos : [videos];
+
+         for (const file of files) {
+            const uploadResult = await cloudinary.uploader.upload(file.tempFilePath, {
+               resource_type: "auto",
+               folder: "news",
+            });
+            videosArray.push(uploadResult.secure_url);
+         }
+      }
+
+      if (btnName && btnLink) {
+         button = {
+            text: btnName,
+            link: btnLink,
+         };
       }
 
       const createNews = new NewsUpdateModel({
          createdBy: adminID,
          title,
          content,
-         thumbnail,
-         video,
+         thumbnail: thumbnails,
+         video: videosArray,
+         button: button,
+         pinnedNews: pinnedNews === true || pinnedNews === "true" ? true : false,
       });
+
       await createNews.save();
+
       return res.status(201).json({
          success: true,
          message: "News added successfully",
@@ -85,8 +118,11 @@ const handleGetNews = async (req, res, next) => {
             _id: 1,
             title: 1,
             thumbnail: 1,
+            button: 1,
+            createdAt: 1,
             video: 1,
             content: 1,
+            pinnedNews: 1,
             admin: {
                _id: "$adminDetails._id",
                username: "$adminDetails.username",
@@ -95,7 +131,12 @@ const handleGetNews = async (req, res, next) => {
          },
       });
 
-      pipeline.push({ $sort: { createdAt: -1 } });
+      pipeline.push({
+         $sort: {
+            pinnedNews: -1,
+            createdAt: -1,
+         },
+      });
 
       pipeline.push({ $skip: skip });
       pipeline.push({ $limit: limit });
@@ -125,50 +166,158 @@ const handleGetNews = async (req, res, next) => {
    }
 };
 
+// GET NEWS
+// METHOD : GET
+// ENDPOINT: /api/news/get-news
+const handleSingleGetNews = async (req, res, next) => {
+   try {
+      const newsId = req.params.newsID;
+      console.log(newsId);
+      const pipeline = [];
+
+      pipeline.push({
+         $match: {
+            _id: new mongoose.Types.ObjectId(newsId),
+         },
+      });
+
+      pipeline.push({
+         $lookup: {
+            from: "admins",
+            localField: "createdBy",
+            foreignField: "_id",
+            as: "adminDetails",
+         },
+      });
+
+      pipeline.push({
+         $unwind: {
+            path: "$adminDetails",
+            preserveNullAndEmptyArrays: true,
+         },
+      });
+
+      pipeline.push({
+         $project: {
+            _id: 1,
+            title: 1,
+            thumbnail: 1,
+            button: 1,
+            createdAt: 1,
+            video: 1,
+            content: 1,
+            admin: {
+               _id: "$adminDetails._id",
+               username: "$adminDetails.username",
+               profilePicture: "$adminDetails.profilePicture",
+            },
+         },
+      });
+
+      const news = await NewsUpdateModel.aggregate(pipeline);
+
+      if (news.length === 0) {
+         return res.status(404).json({
+            success: false,
+            message: "News not found",
+         });
+      }
+
+      return res.status(200).json({
+         success: true,
+         data: news[0],
+      });
+   } catch (error) {
+      console.log(error);
+      next(error);
+   }
+};
+
 // UPDATE NEWS
 // METHOD : GET
 // ENDPOINT: /api/news/:adminID/update-news/:newsID
 const handleUpdateNews = async (req, res, next) => {
    try {
       const { adminID, newsID } = req.params;
-      const { content, title } = req.body;
+      const { content, title, images: existingImages, btnName, btnLink, pinnedNews } = req.body;
 
-      // Check admin exists
       const findAdmin = await AdminModel.findById(adminID);
       if (!findAdmin) {
          return res.status(404).json({ message: "Admin Not Found" });
       }
 
-      // Check news exists
       const findNews = await NewsUpdateModel.findById(newsID);
       if (!findNews) {
          return res.status(404).json({ message: "News Not Found" });
       }
 
-      const upload = req?.files?.upload;
+      const images = req?.files?.images;
+      const videos = req?.files?.videos;
+      let button = {
+         link: "",
+         text: "",
+      };
 
-      if (upload) {
-         const uploadResult = await cloudinary.uploader.upload(upload.tempFilePath, {
-            resource_type: "auto",
-            folder: "news",
-         });
+      // Existing image links from frontend
+      let thumbnails = existingImages ? (Array.isArray(existingImages) ? existingImages : [existingImages]) : [];
 
-         if (uploadResult.resource_type === "image") {
-            findNews.thumbnail = uploadResult.secure_url;
-            findNews.video = ""; // clear video if new image
-         } else if (uploadResult.resource_type === "video") {
-            findNews.video = uploadResult.secure_url;
-            findNews.thumbnail = ""; // clear image if new video
+      let videosArray = [];
+
+      // Upload new images and merge
+      if (images) {
+         const files = Array.isArray(images) ? images : [images];
+
+         for (const file of files) {
+            const uploadResult = await cloudinary.uploader.upload(file.tempFilePath, {
+               resource_type: "auto",
+               folder: "news",
+            });
+
+            thumbnails.push(uploadResult.secure_url);
          }
       }
 
-      // Update other fields
+      // Upload videos
+      if (videos) {
+         const files = Array.isArray(videos) ? videos : [videos];
+
+         for (const file of files) {
+            const uploadResult = await cloudinary.uploader.upload(file.tempFilePath, {
+               resource_type: "auto",
+               folder: "news",
+            });
+
+            videosArray.push(uploadResult.secure_url);
+         }
+      }
+
+      // Save merged data
+      if (thumbnails.length) {
+         findNews.thumbnail = thumbnails;
+      }
+
+      if (videosArray.length) {
+         findNews.video = videosArray;
+      }
+
+      if (btnName && btnLink) {
+         button = {
+            text: btnName,
+            link: btnLink,
+         };
+      }
+
       findNews.title = title || findNews.title;
       findNews.content = content || findNews.content;
+      findNews.button = button;
+      findNews.pinnedNews = pinnedNews === true || pinnedNews === "true" ? true : false;
 
       await findNews.save();
 
-      res.status(200).json({ message: "News Updated Successfully", data: findNews });
+      res.status(200).json({
+         message: "News Updated Successfully",
+         data: findNews,
+      });
    } catch (error) {
       console.log(error);
       next(error);
@@ -202,4 +351,4 @@ const handleDeleteNews = async (req, res, next) => {
    }
 };
 
-export { handleAddNews, handleGetNews, handleUpdateNews, handleDeleteNews };
+export { handleAddNews, handleGetNews, handleUpdateNews, handleDeleteNews, handleSingleGetNews };
