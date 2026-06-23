@@ -26,11 +26,13 @@ const handleRealtimeCounter = async (req, res, next) => {
 
          if (index > -1) {
             userHistory.histories[index].count += seq;
+            userHistory.totalDarood = (Number(userHistory.totalDarood) || 0) + seq;
          } else {
             userHistory.histories.push({
                count: seq,
                readDate: new Date(today),
             });
+            userHistory.totalDarood = (Number(userHistory.totalDarood) || 0) + seq;
          }
 
          await userHistory.save();
@@ -43,6 +45,7 @@ const handleRealtimeCounter = async (req, res, next) => {
                   readDate: new Date(today),
                },
             ],
+            totalDarood: seq,
          });
       }
 

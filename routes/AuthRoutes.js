@@ -33,6 +33,7 @@ router.post("/:userId/verify-delete-account", AuthMiddleware, AccessMiddleware([
 
 router.delete("/:userId/delete-account", handleDeleteAccount);
 
-router.get("/get-users", AuthMiddleware, AccessMiddleware(["Admin"]), handleGetUser);
+// router.get("/get-users", AuthMiddleware, AccessMiddleware(["Admin"]), handleGetUser);
+router.get("/get-users", handleGetUser);
 
 export default router;

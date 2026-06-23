@@ -25,6 +25,7 @@ const HistorySchema = new Schema(
          unique: true,
       },
       histories: [historyItemSchema],
+      totalDarood: { type: Number, required: true },
    },
    { timestamps: true },
 );

@@ -12,7 +12,7 @@ const handleAddNews = async (req, res, next) => {
       const createdBy = await AdminModel.find().limit(1);
       const adminID = createdBy[0]._id;
 
-      const { content, title, btnName, btnLink, pinnedNews } = req.body;
+      const { content, title, btnName, btnLink, pinnedNews, videoLink } = req.body;
 
       const images = req?.files?.images;
       const videos = req?.files?.videos;
@@ -53,6 +53,9 @@ const handleAddNews = async (req, res, next) => {
             });
             videosArray.push(uploadResult.secure_url);
          }
+      }
+      if (videoLink) {
+         videosArray.push(videoLink);
       }
 
       if (btnName && btnLink) {
@@ -239,7 +242,7 @@ const handleSingleGetNews = async (req, res, next) => {
 const handleUpdateNews = async (req, res, next) => {
    try {
       const { adminID, newsID } = req.params;
-      const { content, title, images: existingImages, btnName, btnLink, pinnedNews } = req.body;
+      const { content, title, images: existingImages, btnName, btnLink, pinnedNews, videoLink } = req.body;
 
       const findAdmin = await AdminModel.findById(adminID);
       if (!findAdmin) {
@@ -291,14 +294,14 @@ const handleUpdateNews = async (req, res, next) => {
          }
       }
 
-      // Save merged data
-      if (thumbnails.length) {
-         findNews.thumbnail = thumbnails;
+      if (videoLink) {
+         videosArray.push(videoLink);
       }
 
-      if (videosArray.length) {
-         findNews.video = videosArray;
-      }
+      // Save merged data
+      findNews.thumbnail = thumbnails;
+
+      findNews.video = videosArray;
 
       if (btnName && btnLink) {
          button = {

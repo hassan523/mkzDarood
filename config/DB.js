@@ -1,3 +1,48 @@
+// import mongoose from "mongoose";
+// import dotenv from "dotenv";
+
+// dotenv.config();
+// const MONGO_URI = process.env.MONGO_URI;
+
+// if (!MONGO_URI) {
+//    throw new Error("Please define MONGO_URI");
+// }
+
+// let cached = global.mongoose;
+
+// if (!cached) {
+//    cached = global.mongoose = {
+//       conn: null,
+//       promise: null,
+//    };
+// }
+
+// const connectDB = async () => {
+//    if (cached.conn) {
+//       console.log("♻️ Using cached database connection");
+//       return cached.conn;
+//    }
+
+//    if (!cached.promise) {
+//       cached.promise = mongoose.connect(MONGO_URI, {
+//          serverSelectionTimeoutMS: 10000,
+//          family: 4,
+//          directConnection: false,
+//       });
+//    }
+
+//    try {
+//       cached.conn = await cached.promise;
+//       console.log("✅ Database Connected");
+//       return cached.conn;
+//    } catch (error) {
+//       cached.promise = null;
+//       throw error;
+//    }
+// };
+
+// export default connectDB;
+
 import mongoose from "mongoose";
 import dns from "dns";
 
