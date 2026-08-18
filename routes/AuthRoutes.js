@@ -5,9 +5,6 @@ import { loginSchema, adminSchema, userSchema } from "../validations/AuthValidat
 import AuthMiddleware from "../middlewares/AuthMiddleware.js";
 import AccessMiddleware from "../middlewares/AccessMiddleware.js";
 import { CreateUploadMiddleware } from "../middlewares/MulterMiddleware.js";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
 
 const router = express.Router();
 
