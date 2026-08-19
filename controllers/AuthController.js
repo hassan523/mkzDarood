@@ -260,8 +260,127 @@ const forgetPassword = async (req, res, next) => {
 
          SendGridMailer({
             to: identifier,
-            subject: "Password Reset OTP",
-            html: `<p>Your OTP for password reset is: <b>${otp}</b>. It will expire in 10 minutes.</p>`,
+            subject: "Your email verification code",
+            html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+         <meta charset="UTF-8" />
+         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+         <meta name="x-apple-disable-message-reformatting" />
+         <title>Your verification code</title>
+      </head>
+
+      <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#374151;">
+
+         <table
+            width="100%"
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            role="presentation"
+            style="background-color:#f4f4f5;padding:40px 16px;"
+         >
+            <tr>
+               <td align="center">
+
+                  <table
+                     width="100%"
+                     border="0"
+                     cellpadding="0"
+                     cellspacing="0"
+                     role="presentation"
+                     style="max-width:600px;background-color:#ffffff;"
+                  >
+                     <tr>
+                        <td style="padding:40px;">
+
+                           <h1
+                              style="margin:0 0 20px 0;font-size:24px;line-height:32px;color:#111827;"
+                           >
+                              Your verification code
+                           </h1>
+
+                           <p
+                              style="margin:0 0 20px 0;font-size:16px;line-height:24px;color:#374151;"
+                           >
+                              Hi ${user.username},
+                           </p>
+
+                           <p
+                              style="margin:0 0 24px 0;font-size:16px;line-height:24px;color:#374151;"
+                           >
+                              Use the code below to complete your sign-in to
+                              <strong>MKZDarood</strong>.
+                              This code will expire in
+                              <strong> 10 minutes</strong>.
+                           </p>
+
+                           <table
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation"
+                              style="background-color:#f9fafb;border-radius:8px;"
+                           >
+                              <tr>
+                                 <td
+                                    align="center"
+                                    style="padding:28px 20px;"
+                                 >
+                                    <div
+                                       style="font-size:32px;line-height:40px;font-weight:700;letter-spacing:8px;color:#111827;"
+                                    >
+                                       ${otp}
+                                    </div>
+                                 </td>
+                              </tr>
+                           </table>
+
+                           <p
+                              style="margin:24px 0 16px 0;font-size:15px;line-height:24px;color:#374151;"
+                           >
+                              If you didn't request this code, you can safely
+                              ignore this email. Someone may have entered your
+                              email address by mistake.
+                           </p>
+
+                           <p
+                              style="margin:0 0 24px 0;font-size:15px;line-height:24px;color:#374151;"
+                           >
+                              For your security, never share this code with
+                              anyone. Our team will never ask you for your
+                              verification code.
+                           </p>
+
+                           <hr
+                              style="border:0;border-top:1px solid #e5e7eb;margin:32px 0 24px 0;"
+                           />
+
+                           <p
+                              style="margin:0 0 8px 0;font-size:12px;line-height:18px;color:#6b7280;"
+                           >
+                              Need help? Contact us at support@markazdarood.de.
+                           </p>
+
+                           <p
+                              style="margin:0;font-size:12px;line-height:18px;color:#6b7280;"
+                           >
+                              © 2026 MKZDarood. All rights reserved.
+                           </p>
+
+                        </td>
+                     </tr>
+                  </table>
+
+               </td>
+            </tr>
+         </table>
+
+      </body>
+      </html>
+   `,
          });
 
          res.status(200).json({ message: "OTP sent to your email.", identifier });
