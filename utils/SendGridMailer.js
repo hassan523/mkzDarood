@@ -6,13 +6,17 @@ import dotenv from "dotenv";
 dotenv.config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const SendGridMailer = async ({ to, subject, html }) => {
+const SendGridMailer = async ({ to, subject, html, id, variable }) => {
    try {
       const response = await resend.emails.send({
          from: process.env.RESEND_FROM_EMAIL,
          to,
          subject,
          html,
+         template: {
+            id: id,
+            variables: variable,
+         },
       });
 
       console.log("✅ Email sent successfully");
