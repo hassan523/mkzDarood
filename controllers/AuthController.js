@@ -76,17 +76,15 @@ const register = async (req, res, next) => {
       } else if (role === "User") {
          const otp = generateOTP();
          const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-         console.log(otp);
-         // autoMailer({
-         //   to: email,
-         //   subject: "Password Reset OTP",
-         //   message: `<p>Your OTP for password reset is: <b>${otp}</b>. It will expire in 10 minutes.</p>`,
-         // });
 
          SendGridMailer({
             to: email,
             subject: "Email Verification OTP",
-            html: `<p>Your OTP for email verification is: <b>${otp}</b>. It will expire in 10 minutes.</p>`,
+            id: "signup-template",
+            variable: {
+               first_name: "New User",
+               signup_code: otp,
+            },
          });
 
          const createUserOtp = new OtpVerificationModel({
@@ -223,8 +221,9 @@ const forgetPassword = async (req, res, next) => {
 
       const otp = generateOTP();
       const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
+      console.log({ identifier, type });
       if (type === "signup") {
+         console.log({ identifier, type }, "From signup");
          const findOtp = await OtpVerificationModel.findOne({ identifier: identifier });
          if (findOtp) {
             await OtpVerificationModel.findOneAndDelete({ identifier: identifier });
@@ -241,13 +240,14 @@ const forgetPassword = async (req, res, next) => {
             subject: "Email Verification OTP",
             id: "signup-template",
             variable: {
-               first_name: user.username,
+               first_name: "New User",
                signup_code: otp,
             },
          });
 
          res.status(200).json({ message: "OTP sent to your email.", identifier });
-      } else if (type === "otp") {
+      }
+      if (type === "otp") {
          const user =
             (await UserModel.findOne({
                email: identifier,
