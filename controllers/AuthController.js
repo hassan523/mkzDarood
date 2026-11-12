@@ -601,14 +601,11 @@ const handleVerifyDeleteAccount = async (req, res, next) => {
       SendGridMailer({
          to: user.email,
          subject: "Confirm Account Deletion",
-         html: `
-                  <h3>Account Deletion Request</h3>
-                  <p>We received a request to delete your account.</p>
-                  <p>Please use the OTP below to confirm:</p>
-                  <h2>${otp}</h2>
-                  <p>This OTP is valid for 10 minutes.</p>
-                  <p>If you did not make this request, you can safely ignore this email.</p>
-      `,
+         id: "delete_account",
+         variable: {
+            first_name: user.username,
+            otp_code: otp,
+         },
       });
 
       const createUserOtp = new OtpVerificationModel({
