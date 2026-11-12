@@ -1,6 +1,7 @@
 import transporter from "./NodeMailerConfig.js";
 
 const autoMailer = ({ from = 'admin@tactix.asia', to, subject, message }) => {
+    
     try {
         const mailOptions = {
             from: from,
